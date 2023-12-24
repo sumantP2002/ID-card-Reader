@@ -1,40 +1,32 @@
-// src/components/ImageForm.js
+// ImageForm.js
 import React, { useState } from 'react';
 import axios from 'axios';
 
-const ImageForm = ({ onResult }) => {
-  const [image, setImage] = useState(null);
+const ImageForm = ({ onExtractionComplete }) => {
+  const [file, setFile] = useState(null);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    setImage(file);
+  const handleFileChange = (event) => {
+    console.log('hii');
+    setFile(event.target.files[0]);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
+    //console.log('onExtractionComplete:', onExtractionComplete);
     const formData = new FormData();
-    formData.append('image', image);
+    formData.append('image', file);
 
     try {
-      const response = await axios.post('http://localhost:3001/detect-text', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      onResult(response.data);
+      const response = await axios.post('http://localhost:3001/extract-information', formData);
+      onExtractionComplete(response.data);
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error extracting information:', error);
     }
   };
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
-        <input type="file" onChange={handleImageChange} />
-        <button type="submit">Detect Text</button>
-      </form>
+      <input type="file" onChange={handleFileChange} />
+      <button onClick={handleSubmit}>Submit</button>
     </div>
   );
 };

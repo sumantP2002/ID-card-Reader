@@ -4,7 +4,7 @@ const multer = require('multer');
 const { ImageAnnotatorClient } = require('@google-cloud/vision');
 const cors = require('cors');
 
-// Load the service account key from a file
+
 const serviceAccountKey = {
     "type": "service_account",
     "project_id": "principal-rhino-409017",
@@ -19,40 +19,63 @@ const serviceAccountKey = {
     "universe_domain": "googleapis.com"
   };
 
-
-
-
- 
-
 const app = express();
 const port = 3001;
+
 app.use(cors());
 
 const client = new ImageAnnotatorClient({ credentials: serviceAccountKey });
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-app.post('/detect-text', upload.single('image'), async (req, res) => {
+app.post('/extract-information', upload.single('image'), async (req, res) => {
   try {
     const [result] = await client.textDetection(req.file.buffer);
     const texts = result.textAnnotations;
 
-    const resultJson = {
-      text_detected: texts.map((text) => ({
-        description: text.description,
-        bounding_box: text.boundingPoly.vertices.map((vertex) => ({
-          x: vertex.x,
-          y: vertex.y,
-        })),
-      })),
-    };
+    // Extract relevant information
+    const extractedData = extractInformation(texts[0].description);
+    console.log(extractedData.name);
+    console.log(extractedData.lastName);
+    console.log(extractedData.expiryDate);
 
-    res.json(resultJson);
+    res.json(extractedData);
   } catch (error) {
-    console.error('Error detecting text:', error);
+    console.error('Error extracting information:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 });
+
+function extractInformation(text) {
+
+  const nameRegex = /Name (.+)/;
+  const lastNameRegex = /Last name (.+)/;
+  const dobRegex = /Date of Birth (\d{1,2} [a-zA-Z]+\. \d{4})/;
+  const issueDateRegex = /(\d{1,2} [A-Za-z]+\.\s\d{4})/;
+  const expiryDateRegex = /(\d{1,2} [A-Za-z]+\.\s\d{4})/;
+  const idNumberRegex = /(\d\s\d{4}\s\d{5}\s\d{2}\s\d)/;
+
+  const nameMatch = text.match(nameRegex);
+  const lastNameMatch = text.match(lastNameRegex);
+  const dobMatch = text.match(dobRegex);
+  const issueDate = text.match(/Date of Issue/);
+  const issueDateMatch = issueDate && text.substring(0, issueDateRegex.index).match(issueDateRegex);
+
+  const expiryDate = text.match(/Date of Expiry/);
+  const expiryDateMatch = expiryDate && text.substring(0, expiryDate.index).match(expiryDateRegex);
+  const idNumberMatch = text.match(idNumberRegex);
+
+  const extractedData = {
+    name: nameMatch ? nameMatch[1] : null,
+    lastName: lastNameMatch ? lastNameMatch[1] : null,
+    dob: dobMatch ? dobMatch[1] : null,
+    issueDate: issueDateMatch ? issueDateMatch[1] : null,
+    expiryDate: expiryDateMatch ? expiryDateMatch[1] : null,
+    idNumber: idNumberMatch ? idNumberMatch[1] : null,
+  };
+
+  return extractedData;
+}
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
