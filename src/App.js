@@ -1,25 +1,27 @@
-import logo from './logo.svg';
-import './App.css';
+// src/App.js
+import React, { useState } from 'react';
+import ImageForm from './components/ImageForm';
 
-function App() {
+const App = () => {
+  const [result, setResult] = useState(null);
+
+  const handleResult = (data) => {
+    setResult(data);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <h1>Text Detection App</h1>
+      <ImageForm onResult={handleResult} />
+      {result && (
+        <div>
+          <h2>Text Detection Result:</h2>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
+        </div>
+      )}
     </div>
   );
-}
+};
 
 export default App;
+
